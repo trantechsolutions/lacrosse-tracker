@@ -29,7 +29,8 @@
           Reset Game
         </button>
         <div class="clock-display">
-          <span>{{ formatTime(props.gameClock) }}</span>
+          <span v-if="!isPublicView && !isClockRunning" class="editable">{{ formatTime(props.gameClock) }}</span>
+          <span v-else>{{ formatTime(props.gameClock) }}</span>
         </div>
       </div>
       <div class="col-4">
@@ -42,7 +43,8 @@
           Reset Shot
         </button>
         <div class="side-clock-display shot-clock-seconds">
-          <span>{{ props.shotClock }}</span>
+          <span v-if="!isPublicView && !isClockRunning" class="editable">{{ props.shotClock }}</span>
+          <span v-else>{{ props.shotClock }}</span>
         </div>
       </div>
       <div v-if="!isPublicView" class="text-center my-3">
@@ -74,6 +76,7 @@ function formatTime(sec) {
   const s = String(sec % 60).padStart(2, "0");
   return `${m}:${s}`;
 }
+
 </script>
 <style scoped>
 .clock-display {

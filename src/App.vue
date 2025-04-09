@@ -2,10 +2,9 @@
   <div>
     <router-view />
     <div class="container">
-      <div class="position-absolute bottom-0 end-0 m-2">
+      <div class="position-fixed bottom-0 end-0 m-2">
           <router-link to="/" class="btn btn-outline-secondary btn-sm me-2">Public</router-link>
           <router-link v-if="user && isAllowed" to="/control" class="btn btn-outline-primary btn-sm me-2">Control</router-link>
-          <router-link v-if="user && isAllowed" to="/penalties" class="btn btn-outline-danger btn-sm me-2">Penalties</router-link>
           <router-link v-if="user && isAllowed" to="/stats" class="btn btn-outline-success btn-sm me-2">Stats</router-link>
           <button class="btn btn-secondary btn-sm" v-if="!user" @click="loginWithGoogle">Login to Access Controls</button>
           <p v-if="user && !isAllowed">You are not authorized to access this content.</p>

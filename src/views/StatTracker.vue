@@ -4,7 +4,7 @@
       <div class="col-6">
         <PlayerStatsForm
           :newPlayerStat="newPlayerStat"
-          @addPlayerStat="addPlayerStat"
+          @addPlayerStat="addPlayerStat"          
         />
       </div>
       <div class="col-6">
@@ -26,6 +26,9 @@ import PlayerStatsForm from "../components/PlayerStatsForm.vue";
 import PlayerStatsList from "../components/PlayerStatsList.vue";
 
 const playerStats = ref([]);
+const gameClock = ref();
+const quarter = ref();
+
 const newPlayerStat = ref({
   player: "",
   team: "home",
@@ -36,8 +39,10 @@ onMounted(() => {
   const scoreboardRef = dbRef(db, "/scoreboard");
   onValue(scoreboardRef, (snapshot) => {
     const data = snapshot.val();
-    if (data?.playerStats) {
+    if (data) {
       playerStats.value = JSON.parse(data.playerStats);
+      gameClock.value = data.gameClock;
+      quarter.value = data.quarter;
     }
   });
 });
@@ -50,7 +55,7 @@ function updateFirebase() {
 }
 
 function addPlayerStat(stat) {
-  const enriched = { ...stat, gameClock: 0, quarter: 0 }; // or bring gameClock/quarter from Firebase
+  const enriched = { ...stat, gameClock: gameClock.value, quarter: quarter.value }; // or bring gameClock/quarter from Firebase
   playerStats.value.push(enriched);
   updateFirebase();
 }

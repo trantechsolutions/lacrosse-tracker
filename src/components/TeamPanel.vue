@@ -1,6 +1,7 @@
 <template>
     <div class="col-6 border-end">
-      <h4><span @click="$emit('editName')" class="editable">{{ teamName }}</span></h4>
+      <h4><span v-if="!isPublicView && !isClockRunning" @click="$emit('editName')" class="editable">{{ teamName }}</span>
+      <span v-else>{{ teamName }}</span></h4>
       <div class="score-display mb-2">{{ score }}</div>
       <div v-if="!isPublicView" class="btn-group btn-group-sm mb-2">
         <button class="btn btn-danger btn-lg" @click="$emit('adjustScore', -1)"><i class="bi bi-dash-circle"></i></button>
