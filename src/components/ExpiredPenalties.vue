@@ -3,9 +3,10 @@
       <h5 class="text-center">Expired Penalties</h5>
       <ul class="list-group">
         <li v-for="(p, i) in expiredPenalties" :key="i" class="list-group-item">
-          {{ p.team }} - #{{ p.player }} | {{ p.category }} | {{ formatTime(p.startGameClock) }} → {{ formatTime(p.endGameClock) }}
+          {{ p.team }} {{ p.player ? `- #${p.player}` : '' }} | {{ p.category }} | {{ formatTime(p.startGameClock) }} → {{ formatTime(p.endGameClock) }}
         </li>
       </ul>
+      <button v-if="expiredPenalties.length > 0" class="btn btn-danger mt-2" @click="$emit('clearPenalties')">Clear Penalties</button>
     </div>
   </template>
   <script setup>

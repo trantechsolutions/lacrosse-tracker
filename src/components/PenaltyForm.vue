@@ -108,7 +108,7 @@
       <div class="col-6 offset-3">
         <button
           class="btn btn-primary w-100"
-          @click="$emit('addPenalty', local)"
+          @click="handleSubmit"
         >
           Add Penalty
         </button>
@@ -138,6 +138,7 @@ watch(
 
 const handleSubmit = () => {
   // Emit the new penalty to the parent component
+  console.log(local)
   emit('addPenalty', { 
     ...local, 
     startGameClock: props.gameClock, 

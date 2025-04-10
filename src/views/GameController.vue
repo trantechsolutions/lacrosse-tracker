@@ -30,7 +30,7 @@
         <PenaltyForm :newPenalty="newPenalty" @addPenalty="addPenalty" />
       </div>
       <div class="col-6">
-        <ExpiredPenalties :expiredPenalties="expiredPenalties" />
+        <ExpiredPenalties :expiredPenalties="expiredPenalties" @clearPenalties="clearPenalties"/>
       </div>
     </div>
 
@@ -41,20 +41,23 @@
       >
         Export Data
       </button>
+      <button class="btn btn-dark btn-sm" @click="newGame">
+        New Game
+      </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { ref as dbRef, onValue, update } from "firebase/database";
+import { ref, onMounted, onUnmounted } from "vue";
+import { ref as dbRef, onValue, update, push, set, remove } from "firebase/database";
 import { db } from "../firebase.js";
+import Swal from 'sweetalert2';
+
 import HeaderSection from "../components/HeaderSection.vue";
 import ScoreSection from "../components/ScoreSection.vue";
 import PenaltyForm from "../components/PenaltyForm.vue";
 import ExpiredPenalties from "../components/ExpiredPenalties.vue";
-import PlayerStatsForm from "../components/PlayerStatsForm.vue";
-import PlayerStatsList from "../components/PlayerStatsList.vue";
 
 const score = ref({ home: 0, away: 0 });
 const timeouts = ref({ home: 2, away: 2 });
@@ -92,9 +95,83 @@ onMounted(() => {
       home.value = data.home ?? "Home";
       away.value = data.away ?? "Away";
       playerStats.value = JSON.parse(data.playerStats || "[]");
+      activePenalties.value = JSON.parse(data.activePenalties || "[]");
+      expiredPenalties.value = JSON.parse(data.expiredPenalties || "[]");
     }
   });
 });
+
+onUnmounted(() => {
+  if (clockInterval.value) {
+    clearInterval(clockInterval.value);
+    clockInterval.value = null;
+  }
+});
+
+async function newGame() {
+  const result = await Swal.fire({
+    title: 'Start a New Game?',
+    text: 'This will archive the current game and reset the scoreboard.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Yes, start new game!',
+  });
+
+  if (!result.isConfirmed) return;
+
+  const timestamp = new Date().toISOString();
+
+  // Step 1: Archive current scoreboard under /games/
+  const archiveRef = dbRef(db, `/games`);
+  const newGameRef = push(archiveRef); // auto-generates a key
+
+  await set(newGameRef, {
+    archivedAt: timestamp,
+    data: {
+      score: score.value,
+      timeouts: timeouts.value,
+      gameClock: gameClock.value,
+      shotClock: shotClock.value,
+      isClockRunning: isClockRunning.value,
+      quarter: quarter.value,
+      home: home.value,
+      away: away.value,
+      playerStats: playerStats.value,
+      activePenalties: activePenalties.value,
+      expiredPenalties: expiredPenalties.value,
+    },
+  });
+
+  // Step 2: Reset current game state
+  score.value = { home: 0, away: 0 };
+  timeouts.value = { home: 2, away: 2 };
+  gameClock.value = 720;
+  shotClock.value = 80;
+  isClockRunning.value = false;
+  quarter.value = 1;
+  home.value = "Home";
+  away.value = "Away";
+  playerStats.value = [];
+  activePenalties.value = [];
+  expiredPenalties.value = [];
+
+  // Clear any running interval
+  if (clockInterval.value) {
+    clearInterval(clockInterval.value);
+    clockInterval.value = null;
+  }
+
+  updateFirebase();
+
+  Swal.fire({
+    title: 'New Game Started!',
+    icon: 'success',
+    timer: 1500,
+    showConfirmButton: false,
+  });
+}
 
 function updateFirebase() {
   const scoreboardRef = dbRef(db, "/scoreboard");
@@ -108,23 +185,54 @@ function updateFirebase() {
     home: home.value,
     away: away.value,
     playerStats: JSON.stringify(playerStats.value),
+    activePenalties: JSON.stringify(activePenalties.value),
+    expiredPenalties: JSON.stringify(expiredPenalties.value),
   });
 }
 
 function toggleClocks() {
-  if (clockInterval.value) {
+  if (isClockRunning.value) {
+    console.log("Stopping clocks");
     clearInterval(clockInterval.value);
     clockInterval.value = null;
     isClockRunning.value = false;
-  } else {
-    clockInterval.value = setInterval(() => {
-      if (shotClock.value > 0) shotClock.value--;
-      if (gameClock.value > 0) gameClock.value--;
-      checkPenalties();
-      updateFirebase();
-    }, 1000);
-    isClockRunning.value = true;
+    updateFirebase();
+    return;
+  } 
+  
+  // 🛑 Don't start if either clock is already 0
+  if (gameClock.value === 0 || shotClock.value === 0) {
+    console.log("Clocks not started — one or both clocks are at 0");
+    return;
   }
+  
+  console.log("Starting clocks");
+  clockInterval.value = setInterval(() => {
+    let shouldStop = false;
+
+    if (shotClock.value > 0) {
+      shotClock.value--;
+      if (shotClock.value === 0) shouldStop = true;
+    }
+
+    if (gameClock.value > 0) {
+      gameClock.value--;
+      if (gameClock.value === 0) shouldStop = true;
+    }
+
+    checkPenalties();
+    updateFirebase();
+
+    if (shouldStop) {
+      clearInterval(clockInterval.value);
+      clockInterval.value = null;
+      isClockRunning.value = false;
+      console.log("Clocks stopped because one hit zero");
+      updateFirebase();
+    }
+  }, 1000);
+
+  isClockRunning.value = true;
   updateFirebase();
 }
 
@@ -152,31 +260,85 @@ function adjustQuarter(amount) {
   updateFirebase();
 }
 
-function editName(type) {
-  const name = prompt(
-    `Set ${type} Team Name:`,
-    type === "home" ? home.value : away.value
-  );
-  if (type === "home") home.value = name;
-  else away.value = name;
-  updateFirebase();
+async function editName(type) {
+  const currentName = type === "home" ? home.value : away.value;
+
+  const { value: name } = await Swal.fire({
+    title: `Set ${type === "home" ? "Home" : "Away"} Team Name`,
+    input: "text",
+    inputLabel: "Team Name",
+    inputValue: currentName,
+    showCancelButton: true,
+    confirmButtonText: "Save",
+    cancelButtonText: "Cancel",
+    inputValidator: (value) => {
+      if (!value) {
+        return "Team name cannot be empty!";
+      }
+    },
+  });
+
+  if (name !== undefined) {
+    if (type === "home") home.value = name;
+    else away.value = name;
+    updateFirebase();
+
+    Swal.fire({
+      title: "Updated!",
+      text: `${type === "home" ? "Home" : "Away"} team name changed to "${name}"`,
+      icon: "success",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+  }
 }
 
-function editClock(type) {
-    const input = prompt(
-      `Set ${type === 'gameClock' ? 'Game' : 'Shot'} Clock (in seconds):`,
-      this[type]
-    );
-    const value = parseInt(input);
-    if (!isNaN(value)) {
-        if (type === "gameClock") gameClock.value = value
-        else shotClock.value = value
-    }
-    updateFirebase();
-  }
 
-function addPenalty() {
-  const p = { ...newPenalty.value };
+async function editClock(type) {
+  const currentValue = type === "gameClock" ? gameClock.value : shotClock.value;
+
+  const { value: input } = await Swal.fire({
+    title: `Set ${type === "gameClock" ? "Game" : "Shot"} Clock`,
+    input: "number",
+    inputLabel: "Time in seconds",
+    inputValue: currentValue,
+    inputAttributes: {
+      min: 0,
+      step: 1,
+    },
+    showCancelButton: true,
+    confirmButtonText: "Set",
+    cancelButtonText: "Cancel",
+    inputValidator: (value) => {
+      if (value === "") {
+        return "You must enter a value!";
+      }
+      const parsed = parseInt(value);
+      if (isNaN(parsed) || parsed < 0) {
+        return "Please enter a valid non-negative number.";
+      }
+    },
+  });
+
+  const parsedValue = parseInt(input);
+  if (!isNaN(parsedValue)) {
+    if (type === "gameClock") gameClock.value = parsedValue;
+    else shotClock.value = parsedValue;
+    updateFirebase();
+
+    Swal.fire({
+      title: "Clock Updated",
+      text: `${type === "gameClock" ? "Game" : "Shot"} clock set to ${parsedValue} seconds.`,
+      icon: "success",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+  }
+}
+
+
+function addPenalty(object) {
+  const p = { ...object };
   p.startGameClock = gameClock.value;
   p.remaining = p.duration;
   p.endGameClock = gameClock.value - p.duration;
@@ -189,11 +351,37 @@ function addPenalty() {
     category: "crosscheck",
     releasable: true,
   };
+  updateFirebase();
 }
 
-function removePenalty(index) {
-  const removed = activePenalties.value.splice(index, 1)[0];
-  expiredPenalties.value.push(removed);
+async function removePenalty(index) {
+  const penalty = activePenalties.value[index];
+  const result = await Swal.fire({
+    title: "Remove Penalty?",
+    html: `
+      <strong>Player:</strong> ${penalty.player}<br>
+      <strong>Team:</strong> ${penalty.team}<br>
+      <strong>Duration:</strong> ${penalty.duration} sec
+    `,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, remove it",
+    cancelButtonText: "Cancel",
+  });
+
+  if (result.isConfirmed) {
+    const removed = activePenalties.value.splice(index, 1)[0];
+    expiredPenalties.value.push(removed);
+    updateFirebase();
+
+    Swal.fire({
+      title: "Removed",
+      text: "The penalty has been moved to expired.",
+      icon: "success",
+      timer: 1200,
+      showConfirmButton: false,
+    });
+  }
 }
 
 function checkPenalties() {
@@ -204,27 +392,33 @@ function checkPenalties() {
     else remaining.push(p);
   }
   activePenalties.value = remaining;
-}
-
-function addPlayerStat() {
-  const stat = {
-    ...newPlayerStat.value,
-    gameClock: gameClock.value,
-    quarter: quarter.value,
-  };
-  playerStats.value.push(stat);
   updateFirebase();
 }
 
-function removePlayerStat(index) {
-  playerStats.value.splice(index, 1);
-  updateFirebase();
+async function clearPenalties() {
+  const result = await Swal.fire({
+    title: "Clear All Expired Penalties?",
+    text: "This will permanently remove all expired penalties from the list.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, clear them",
+    cancelButtonText: "Cancel",
+  });
+
+  if (result.isConfirmed) {
+    expiredPenalties.value = [];
+    updateFirebase();
+
+    Swal.fire({
+      title: "Cleared",
+      text: "Expired penalties have been removed.",
+      icon: "success",
+      timer: 1200,
+      showConfirmButton: false,
+    });
+  }
 }
 
-function clearPlayerStat() {
-  playerStats.value = [];
-  updateFirebase();
-}
 
 function exportData() {
   const data = {

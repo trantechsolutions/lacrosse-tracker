@@ -1,7 +1,7 @@
 <template>
   <div>
     <router-view />
-    <div class="container">
+    <div class="container mb-2">
       <div class="position-fixed bottom-0 end-0 m-2">
           <router-link to="/" class="btn btn-outline-secondary btn-sm me-2">Public</router-link>
           <router-link v-if="user && isAllowed" to="/control" class="btn btn-outline-primary btn-sm me-2">Control</router-link>

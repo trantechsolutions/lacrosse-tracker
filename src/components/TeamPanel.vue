@@ -15,7 +15,7 @@
       <h6>Penalties</h6>
       <ul class="list-group">
         <li v-for="(p, i) in penalties" :key="i" class="list-group-item d-flex justify-content-between align-items-center">
-          #{{ p.player }} - {{ p.category }} ({{ p.remaining }}s)
+          {{ p.player ? `#${p.player}` : 'Player' }} - {{ p.category }} ({{ p.remaining }}s)
           <span v-if="p.releasable" class="badge bg-success">Releasable</span>
           <button class="btn btn-sm btn-outline-danger" @click="$emit('removePenalty', i)"><i class="bi bi-x"></i></button>
         </li>

@@ -29,7 +29,7 @@
           Reset Game
         </button>
         <div class="clock-display">
-          <span v-if="!isPublicView && !isClockRunning" class="editable">{{ formatTime(props.gameClock) }}</span>
+          <span v-if="!isPublicView && !isClockRunning" class="editable" @click="handleSubmit('gameClock')">{{ formatTime(props.gameClock) }}</span>
           <span v-else>{{ formatTime(props.gameClock) }}</span>
         </div>
       </div>
@@ -43,7 +43,7 @@
           Reset Shot
         </button>
         <div class="side-clock-display shot-clock-seconds">
-          <span v-if="!isPublicView && !isClockRunning" class="editable">{{ props.shotClock }}</span>
+          <span v-if="!isPublicView && !isClockRunning" class="editable" @click="handleSubmit('shotClock')">{{ props.shotClock }}</span>
           <span v-else>{{ props.shotClock }}</span>
         </div>
       </div>
@@ -76,6 +76,14 @@ function formatTime(sec) {
   const s = String(sec % 60).padStart(2, "0");
   return `${m}:${s}`;
 }
+
+const emit = defineEmits(["editClock"]);
+
+const handleSubmit = (type) => {
+  // Emit the new penalty to the parent component
+  console.log(type)
+  emit('editClock', type)
+};
 
 </script>
 <style scoped>

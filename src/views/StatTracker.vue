@@ -22,6 +22,8 @@
 import { ref, onMounted } from "vue";
 import { db } from "../firebase";
 import { ref as dbRef, onValue, update } from "firebase/database";
+import Swal from 'sweetalert2';
+
 import PlayerStatsForm from "../components/PlayerStatsForm.vue";
 import PlayerStatsList from "../components/PlayerStatsList.vue";
 
@@ -60,13 +62,59 @@ function addPlayerStat(stat) {
   updateFirebase();
 }
 
-function removePlayerStat(index) {
-  playerStats.value.splice(index, 1);
-  updateFirebase();
+// Remove a single player stat with confirmation
+async function removePlayerStat(index) {
+  const playerStat = playerStats.value[index];
+  const result = await Swal.fire({
+    title: "Remove Player Stat?",
+    html: `
+      <strong>Player:</strong> ${playerStat.player}<br>
+      <strong>Type:</strong> ${playerStat.type}<br>
+      <strong>Quarter:</strong> ${playerStat.quarter}<br>
+    `,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, remove it",
+    cancelButtonText: "Cancel",
+  });
+
+  if (result.isConfirmed) {
+    playerStats.value.splice(index, 1);
+    updateFirebase();
+
+    Swal.fire({
+      title: "Removed",
+      text: "Player stat has been removed.",
+      icon: "success",
+      timer: 1200,
+      showConfirmButton: false,
+    });
+  }
 }
 
-function clearPlayerStat() {
-  playerStats.value = [];
-  updateFirebase();
+// Clear all player stats with confirmation
+async function clearPlayerStat() {
+  const result = await Swal.fire({
+    title: "Clear All Player Stats?",
+    text: "This will permanently remove all player statistics.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, clear them",
+    cancelButtonText: "Cancel",
+  });
+
+  if (result.isConfirmed) {
+    playerStats.value = [];
+    updateFirebase();
+
+    Swal.fire({
+      title: "Cleared",
+      text: "All player stats have been removed.",
+      icon: "success",
+      timer: 1200,
+      showConfirmButton: false,
+    });
+  }
 }
+
 </script>
