@@ -32,13 +32,13 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from "vue";
 import { ref as dbRef, onValue, update, push, set, remove } from "firebase/database";
-import { db } from "../firebase.js";
+import { db } from "@/firebase.js";
 import Swal from 'sweetalert2';
 
-import HeaderSection from "../components/HeaderSection.vue";
-import ScoreSection from "../components/ScoreSection.vue";
-import PenaltyForm from "../components/PenaltyForm.vue";
-import PlayerStatsForm from "../components/PlayerStatsForm.vue";
+import HeaderSection from "@/components/HeaderSection.vue";
+import ScoreSection from "@/components/ScoreSection.vue";
+import PenaltyForm from "@/components/PenaltyForm.vue";
+import PlayerStatsForm from "@/components/PlayerStatsForm.vue";
 
 const score = ref({ home: 0, away: 0 });
 const timeouts = ref({ home: 2, away: 2 });
@@ -430,6 +430,8 @@ function clearPenalties() {
     updateFirebase();
 
     Swal.fire({
+      toast: true,
+      position: "bottom",
       title: "Cleared",
       text: "Expired penalties have been removed.",
       icon: "success",
@@ -446,10 +448,10 @@ function addPlayerStat(stat) {
   updateFirebase();
 }
 
-// Remove a single player stat with confirmation
-async function removePlayerStat(index) {
+// Remove a single player stat without waiting for confirmation
+function removePlayerStat(index) {
   const playerStat = playerStats.value[index];
-  const result = await Swal.fire({
+  Swal.fire({
     title: "Remove Player Stat?",
     html: `
       <strong>Player:</strong> ${playerStat.player}<br>
@@ -460,46 +462,47 @@ async function removePlayerStat(index) {
     showCancelButton: true,
     confirmButtonText: "Yes, remove it",
     cancelButtonText: "Cancel",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      playerStats.value.splice(index, 1);
+      updateFirebase();
+      Swal.fire({
+        title: "Removed",
+        text: "Player stat has been removed.",
+        icon: "success",
+        timer: 1200,
+        showConfirmButton: false,
+      });
+    }
   });
-
-  if (result.isConfirmed) {
-    playerStats.value.splice(index, 1);
-    updateFirebase();
-
-    Swal.fire({
-      title: "Removed",
-      text: "Player stat has been removed.",
-      icon: "success",
-      timer: 1200,
-      showConfirmButton: false,
-    });
-  }
 }
 
-// Clear all player stats with confirmation
-async function clearPlayerStat() {
-  const result = await Swal.fire({
+// Clear all player stats without waiting for confirmation
+function clearPlayerStat() {
+  Swal.fire({
     title: "Clear All Player Stats?",
     text: "This will permanently remove all player statistics.",
     icon: "warning",
     showCancelButton: true,
     confirmButtonText: "Yes, clear them",
     cancelButtonText: "Cancel",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      playerStats.value = [];
+      updateFirebase();
+      Swal.fire({
+        toast: true,
+        position: "bottom",
+        title: "Cleared",
+        text: "All player stats have been removed.",
+        icon: "success",
+        timer: 1200,
+        showConfirmButton: false,
+      });
+    }
   });
-
-  if (result.isConfirmed) {
-    playerStats.value = [];
-    updateFirebase();
-
-    Swal.fire({
-      title: "Cleared",
-      text: "All player stats have been removed.",
-      icon: "success",
-      timer: 1200,
-      showConfirmButton: false,
-    });
-  }
 }
+
 
 
 function exportData() {

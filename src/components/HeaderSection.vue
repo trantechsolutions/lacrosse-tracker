@@ -1,7 +1,7 @@
 <template>
   <div class="container-fluid py-3">
     <div class="row sticky-topbar text-center mb-4">
-      <div class="col-4">
+      <div class="col-12 col-md-4">
         <div>Quarter</div>
         <button
           v-if="!isPublicView"
@@ -19,7 +19,7 @@
         </button>
         <div class="side-clock-display">{{ quarter }}</div>
       </div>
-      <div class="col-4">
+      <div class="col-12 col-md-4">
         <div>Game Clock</div>
         <button
           v-if="!isPublicView"
@@ -33,7 +33,7 @@
           <span v-else>{{ formatTime(props.gameClock) }}</span>
         </div>
       </div>
-      <div class="col-4">
+      <div class="col-12 col-md-4">
         <div>Shot Clock</div>
         <button
           v-if="!isPublicView"
@@ -63,6 +63,7 @@
     </div>
   </div>
 </template>
+
 <script setup>
 const props = defineProps([
   "quarter",
@@ -71,6 +72,7 @@ const props = defineProps([
   "isClockRunning",
   "isPublicView",
 ]);
+
 function formatTime(sec) {
   const m = String(Math.floor(sec / 60)).padStart(2, "0");
   const s = String(sec % 60).padStart(2, "0");
@@ -81,10 +83,10 @@ const emit = defineEmits(["editClock"]);
 
 const handleSubmit = (type) => {
   // Emit the new penalty to the parent component
-  emit('editClock', type)
+  emit('editClock', type);
 };
-
 </script>
+
 <style scoped>
 .clock-display {
   font-size: 8rem;
@@ -98,5 +100,35 @@ const handleSubmit = (type) => {
 
 .shot-clock-seconds {
   color: #dc3545;
+}
+
+@media (max-width: 576px) {
+  .clock-display {
+    font-size: 6rem;
+  }
+
+  .side-clock-display {
+    font-size: 4rem;
+  }
+
+  .btn {
+    font-size: 0.9rem;
+    padding: 10px 15px;
+  }
+
+  .sticky-topbar {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .clock-display {
+    font-size: 7rem;
+  }
+
+  .side-clock-display {
+    font-size: 5rem;
+  }
 }
 </style>

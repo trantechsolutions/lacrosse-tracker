@@ -6,10 +6,11 @@
   </template>
   
   <script setup>
-  import HeaderSection from '../components/HeaderSection.vue'
-  import ScoreSection from '../components/ScoreSection.vue'
+  import HeaderSection from '@/components/HeaderSection.vue'
+  import ScoreSection from '@/components/ScoreSection.vue'
+  
   import { ref, onMounted } from 'vue'
-  import { db } from '../firebase'
+  import { db } from '@/firebase'
   import { ref as dbRef, onValue } from 'firebase/database'
   
   const score = ref({ home: 0, away: 0 })

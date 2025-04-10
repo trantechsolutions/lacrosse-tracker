@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import PublicViewer from '../views/PublicViewer.vue'
-import GameController from '../views/GameController.vue'
+import PublicViewer from '@/views/PublicViewer.vue'
+import GameController from '@/views/GameController.vue'
 import { auth } from '@/firebase'; // Import Firebase auth
 
 // Simulate authentication check based on Firebase auth state
@@ -41,7 +41,7 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory('/lacrosse-tracker/'),
   routes,
 })
 
