@@ -1,7 +1,7 @@
 <template>
   <div class="mb-4">
     <div class="row g-2">
-      <div class="col-6 offset-3 mb-2">
+      <div class="col-12">
         <button class="btn btn-primary w-100" @click="openAddPlayerStatForm">Add Player Stat</button>
       </div>
       <div v-if="playerStats.length > 0" class="col-12">
