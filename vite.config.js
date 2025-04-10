@@ -1,14 +1,38 @@
 import { fileURLToPath, URL } from 'node:url'
-
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
+import { VitePWA } from 'vite-plugin-pwa'  // Import the PWA plugin
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
     vueDevTools(),
+    VitePWA({
+      registerType: 'autoUpdate', // Automatically update service worker
+      manifest: {
+        name: 'Your App Name',
+        short_name: 'AppName',
+        description: 'Description of your app',
+        theme_color: '#42b983',
+        background_color: '#42b983',
+        display: 'standalone', // Makes the app look like a native app
+        start_url: '/',
+        icons: [
+          {
+            src: '/icons/android-chrome-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: '/icons/android-chrome-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+        ],
+      },
+    }),
   ],
   resolve: {
     alias: {

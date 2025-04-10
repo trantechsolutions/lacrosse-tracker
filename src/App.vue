@@ -5,7 +5,6 @@
       <div class="position-fixed bottom-0 end-0 m-2">
           <router-link to="/" class="btn btn-outline-secondary btn-sm me-2">Public</router-link>
           <router-link v-if="user && isAllowed" to="/control" class="btn btn-outline-primary btn-sm me-2">Control</router-link>
-          <router-link v-if="user && isAllowed" to="/stats" class="btn btn-outline-success btn-sm me-2">Stats</router-link>
           <button class="btn btn-secondary btn-sm" v-if="!user" @click="loginWithGoogle">Login to Access Controls</button>
           <p v-if="user && !isAllowed">You are not authorized to access this content.</p>
           <button v-if="user" class="btn btn-danger btn-sm" @click="logout">Logout</button>
@@ -15,6 +14,7 @@
 </template>
 
 <script>
+import { computed } from 'vue';
 import { auth, GoogleAuthProvider, signInWithPopup, signOut } from "@/firebase";  // Import Firebase auth
 
 export default {
@@ -22,9 +22,8 @@ export default {
     return {
       user: null,  // Will hold the authenticated user
       isAllowed: false,  // Flag to track if the user is allowed
-      score: 0,
-      gameTime: "12:00",
       allowedEmails: ["jonny5v@gmail.com"], // List of allowed emails
+      isPublicView: false
     };
   },
   created() {
@@ -40,12 +39,6 @@ export default {
     });
   },
   methods: {
-    startGame() {
-      // Logic to start the game
-    },
-    pauseGame() {
-      // Logic to pause the game
-    },
     loginWithGoogle() {
       const provider = new GoogleAuthProvider();
       
@@ -63,6 +56,7 @@ export default {
       signOut(auth).then(() => {
         console.log("User signed out");
         // Handle post-logout actions (e.g., redirect to login page)
+        this.$router.push('/');  // This redirects to the homepage (PublicViewer)
       }).catch((error) => {
         console.error("Error signing out:", error);
       });
@@ -70,10 +64,3 @@ export default {
   }
 };
 </script>
-
-<style scoped>
-.navbar a.router-link-exact-active {
-  font-weight: bold;
-  text-decoration: underline;
-}
-</style>

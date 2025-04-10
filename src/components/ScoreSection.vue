@@ -6,7 +6,7 @@
         @adjustScore="amt => $emit('adjustScore', 'home', amt)"
         @adjustTimeout="amt => $emit('adjustTimeout', 'home', amt)"
         @editName="() => $emit('editName', 'home')"
-        @removePenalty="i => $emit('removePenalty', i)"
+        @removePenalty="i => $emit('removePenalty', i, 'home')"
       />
       <TeamPanel
         teamLabel="away" :score="score.away" :timeouts="timeouts.away" :penalties="activePenalties.filter(p => p.team === 'away')"
@@ -14,7 +14,7 @@
         @adjustScore="amt => $emit('adjustScore', 'away', amt)"
         @adjustTimeout="amt => $emit('adjustTimeout', 'away', amt)"
         @editName="() => $emit('editName', 'away')"
-        @removePenalty="i => $emit('removePenalty', i)"        
+        @removePenalty="i => $emit('removePenalty', i, 'away')"        
       />
     </div>
   </template>

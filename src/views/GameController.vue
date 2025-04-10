@@ -1,44 +1,25 @@
 <template>
   <div class="container-fluid py-3">
-    <HeaderSection
-      :quarter="quarter"
-      :gameClock="gameClock"
-      :shotClock="shotClock"
-      :isClockRunning="isClockRunning"
-      :isPublicView="false"
-      @toggleClocks="toggleClocks"
-      @resetClock="resetClock"
-      @adjustQuarter="adjustQuarter"
-      @editClock="editClock"
-    />
+    <HeaderSection :quarter="quarter" :gameClock="gameClock" :shotClock="shotClock" :isClockRunning="isClockRunning"
+      :isPublicView="false" @toggleClocks="toggleClocks" @resetClock="resetClock" @adjustQuarter="adjustQuarter"
+      @editClock="editClock" />
 
-    <ScoreSection
-      :score="score"
-      :timeouts="timeouts"
-      :home="home"
-      :away="away"
-      :activePenalties="activePenalties"
-      :isClockRunning="isClockRunning"
-      @adjustScore="adjustScore"
-      @adjustTimeout="adjustTimeout"
-      @editName="editName"
-      @removePenalty="removePenalty"
-      :isPublicView="false"
-    />
+    <ScoreSection :score="score" :timeouts="timeouts" :home="home" :away="away" :activePenalties="activePenalties"
+      :isClockRunning="isClockRunning" @adjustScore="adjustScore" @adjustTimeout="adjustTimeout" @editName="editName"
+      @removePenalty="removePenalty" :isPublicView="false" />
     <div class="row">
       <div class="col-6">
-        <PenaltyForm :newPenalty="newPenalty" @addPenalty="addPenalty" />
+        <PenaltyForm :newPenalty="newPenalty" :gameClock="gameClock" :expiredPenalties="expiredPenalties"
+          @clearPenalties="clearPenalties" @addPenalty="addPenalty" />
       </div>
       <div class="col-6">
-        <ExpiredPenalties :expiredPenalties="expiredPenalties" @clearPenalties="clearPenalties"/>
+        <PlayerStatsForm :newPlayerStat="newPlayerStat" :playerStats="playerStats" @addPlayerStat="addPlayerStat"
+          @removePlayerStat="removePlayerStat" @clearPlayerStat="clearPlayerStat" />
       </div>
     </div>
 
     <div class="position-fixed bottom-0 start-0 m-2">
-      <button
-        class="btn btn-secondary btn-sm me-2"
-        @click="exportData"
-      >
+      <button class="btn btn-secondary btn-sm me-2" @click="exportData">
         Export Data
       </button>
       <button class="btn btn-dark btn-sm" @click="newGame">
@@ -49,7 +30,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import { ref as dbRef, onValue, update, push, set, remove } from "firebase/database";
 import { db } from "../firebase.js";
 import Swal from 'sweetalert2';
@@ -57,7 +38,7 @@ import Swal from 'sweetalert2';
 import HeaderSection from "../components/HeaderSection.vue";
 import ScoreSection from "../components/ScoreSection.vue";
 import PenaltyForm from "../components/PenaltyForm.vue";
-import ExpiredPenalties from "../components/ExpiredPenalties.vue";
+import PlayerStatsForm from "../components/PlayerStatsForm.vue";
 
 const score = ref({ home: 0, away: 0 });
 const timeouts = ref({ home: 2, away: 2 });
@@ -71,6 +52,8 @@ const away = ref("Away");
 const activePenalties = ref([]);
 const expiredPenalties = ref([]);
 const playerStats = ref([]);
+
+const props = defineProps({ isPublicView: Boolean })
 
 const newPenalty = ref({
   team: "home",
@@ -198,14 +181,14 @@ function toggleClocks() {
     isClockRunning.value = false;
     updateFirebase();
     return;
-  } 
-  
+  }
+
   // 🛑 Don't start if either clock is already 0
   if (gameClock.value === 0 || shotClock.value === 0) {
     console.log("Clocks not started — one or both clocks are at 0");
     return;
   }
-  
+
   console.log("Starting clocks");
   clockInterval.value = setInterval(() => {
     let shouldStop = false;
@@ -260,10 +243,10 @@ function adjustQuarter(amount) {
   updateFirebase();
 }
 
-async function editName(type) {
+function editName(type) {
   const currentName = type === "home" ? home.value : away.value;
 
-  const { value: name } = await Swal.fire({
+  Swal.fire({
     title: `Set ${type === "home" ? "Home" : "Away"} Team Name`,
     input: "text",
     inputLabel: "Team Name",
@@ -276,28 +259,35 @@ async function editName(type) {
         return "Team name cannot be empty!";
       }
     },
+  }).then((result) => {
+    const name = result.value;
+
+    if (name !== undefined) {
+      if (type === "home") home.value = name;
+      else away.value = name;
+
+      updateFirebase();
+
+      Swal.fire({
+        toast: true,
+        position: 'bottom',
+        title: "Updated!",
+        text: `${type === "home" ? "Home" : "Away"} team name changed to "${name}"`,
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+        timerProgressBar: true,
+      });
+    }
   });
-
-  if (name !== undefined) {
-    if (type === "home") home.value = name;
-    else away.value = name;
-    updateFirebase();
-
-    Swal.fire({
-      title: "Updated!",
-      text: `${type === "home" ? "Home" : "Away"} team name changed to "${name}"`,
-      icon: "success",
-      timer: 1500,
-      showConfirmButton: false,
-    });
-  }
 }
 
 
-async function editClock(type) {
+
+function editClock(type) {
   const currentValue = type === "gameClock" ? gameClock.value : shotClock.value;
 
-  const { value: input } = await Swal.fire({
+  Swal.fire({
     title: `Set ${type === "gameClock" ? "Game" : "Shot"} Clock`,
     input: "number",
     inputLabel: "Time in seconds",
@@ -318,24 +308,28 @@ async function editClock(type) {
         return "Please enter a valid non-negative number.";
       }
     },
+  }).then((result) => {
+    const input = result.value;
+    const parsedValue = parseInt(input);
+
+    if (!isNaN(parsedValue)) {
+      if (type === "gameClock") gameClock.value = parsedValue;
+      else shotClock.value = parsedValue;
+
+      updateFirebase();
+
+      Swal.fire({
+        toast: true,
+        position: "bottom",
+        title: "Clock Updated",
+        text: `${type === "gameClock" ? "Game" : "Shot"} clock set to ${parsedValue} seconds.`,
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    }
   });
-
-  const parsedValue = parseInt(input);
-  if (!isNaN(parsedValue)) {
-    if (type === "gameClock") gameClock.value = parsedValue;
-    else shotClock.value = parsedValue;
-    updateFirebase();
-
-    Swal.fire({
-      title: "Clock Updated",
-      text: `${type === "gameClock" ? "Game" : "Shot"} clock set to ${parsedValue} seconds.`,
-      icon: "success",
-      timer: 1500,
-      showConfirmButton: false,
-    });
-  }
 }
-
 
 function addPenalty(object) {
   const p = { ...object };
@@ -354,9 +348,25 @@ function addPenalty(object) {
   updateFirebase();
 }
 
-async function removePenalty(index) {
-  const penalty = activePenalties.value[index];
-  const result = await Swal.fire({
+function removePenalty(index, team) {
+  // Filter penalties by team
+  const teamPenalties = activePenalties.value.filter(penalty => penalty.team === team);
+
+  // Make sure the index is valid for the filtered penalties array
+  if (index < 0 || index >= teamPenalties.length) {
+    Swal.fire({
+      title: "Error",
+      text: "Invalid index for the selected team.",
+      icon: "error",
+      showConfirmButton: true,
+    });
+    return; // Exit function if the index is invalid
+  }
+
+  // Find the penalty from the filtered penalties array using the given index
+  const penalty = teamPenalties[index];
+
+  Swal.fire({
     title: "Remove Penalty?",
     html: `
       <strong>Player:</strong> ${penalty.player}<br>
@@ -367,22 +377,32 @@ async function removePenalty(index) {
     showCancelButton: true,
     confirmButtonText: "Yes, remove it",
     cancelButtonText: "Cancel",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Get the actual index of the penalty in the original array (activePenalties)
+      const originalIndex = activePenalties.value.findIndex(
+        (p) => p.player === penalty.player && p.team === penalty.team && p.duration === penalty.duration
+      );
+
+      // Remove the penalty from the original array
+      const removed = activePenalties.value.splice(originalIndex, 1)[0];
+      expiredPenalties.value.push(removed); // Push it to expired penalties
+      updateFirebase();
+
+      Swal.fire({
+        toast: true,
+        position: "bottom",
+        title: "Removed",
+        text: "The penalty has been moved to expired.",
+        icon: "success",
+        timer: 1200,
+        showConfirmButton: false,
+      });
+    }
   });
-
-  if (result.isConfirmed) {
-    const removed = activePenalties.value.splice(index, 1)[0];
-    expiredPenalties.value.push(removed);
-    updateFirebase();
-
-    Swal.fire({
-      title: "Removed",
-      text: "The penalty has been moved to expired.",
-      icon: "success",
-      timer: 1200,
-      showConfirmButton: false,
-    });
-  }
 }
+
+
 
 function checkPenalties() {
   const remaining = [];
@@ -395,15 +415,15 @@ function checkPenalties() {
   updateFirebase();
 }
 
-async function clearPenalties() {
-  const result = await Swal.fire({
+function clearPenalties() {
+  Swal.fire({
     title: "Clear All Expired Penalties?",
     text: "This will permanently remove all expired penalties from the list.",
     icon: "warning",
     showCancelButton: true,
     confirmButtonText: "Yes, clear them",
     cancelButtonText: "Cancel",
-  });
+  }).then((result) => {
 
   if (result.isConfirmed) {
     expiredPenalties.value = [];
@@ -412,6 +432,68 @@ async function clearPenalties() {
     Swal.fire({
       title: "Cleared",
       text: "Expired penalties have been removed.",
+      icon: "success",
+      timer: 1200,
+      showConfirmButton: false,
+    });
+  }
+});
+}
+
+function addPlayerStat(stat) {
+  const enriched = { ...stat, gameClock: gameClock.value, quarter: quarter.value }; // or bring gameClock/quarter from Firebase
+  playerStats.value.push(enriched);
+  updateFirebase();
+}
+
+// Remove a single player stat with confirmation
+async function removePlayerStat(index) {
+  const playerStat = playerStats.value[index];
+  const result = await Swal.fire({
+    title: "Remove Player Stat?",
+    html: `
+      <strong>Player:</strong> ${playerStat.player}<br>
+      <strong>Type:</strong> ${playerStat.type}<br>
+      <strong>Quarter:</strong> ${playerStat.quarter}<br>
+    `,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, remove it",
+    cancelButtonText: "Cancel",
+  });
+
+  if (result.isConfirmed) {
+    playerStats.value.splice(index, 1);
+    updateFirebase();
+
+    Swal.fire({
+      title: "Removed",
+      text: "Player stat has been removed.",
+      icon: "success",
+      timer: 1200,
+      showConfirmButton: false,
+    });
+  }
+}
+
+// Clear all player stats with confirmation
+async function clearPlayerStat() {
+  const result = await Swal.fire({
+    title: "Clear All Player Stats?",
+    text: "This will permanently remove all player statistics.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, clear them",
+    cancelButtonText: "Cancel",
+  });
+
+  if (result.isConfirmed) {
+    playerStats.value = [];
+    updateFirebase();
+
+    Swal.fire({
+      title: "Cleared",
+      text: "All player stats have been removed.",
       icon: "success",
       timer: 1200,
       showConfirmButton: false,

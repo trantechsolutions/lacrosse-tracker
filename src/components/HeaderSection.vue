@@ -81,7 +81,6 @@ const emit = defineEmits(["editClock"]);
 
 const handleSubmit = (type) => {
   // Emit the new penalty to the parent component
-  console.log(type)
   emit('editClock', type)
 };
 
