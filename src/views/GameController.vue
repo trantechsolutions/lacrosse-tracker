@@ -9,22 +9,13 @@
       @removePenalty="removePenalty" :isPublicView="false" />
     <div class="row">
       <div class="col-6">
-        <PenaltyForm :newPenalty="newPenalty" :gameClock="gameClock" :expiredPenalties="expiredPenalties"
+        <PenaltyForm :newPenalty="newPenalty" :gameClock="gameClock" :activePenalties="activePenalties" :expiredPenalties="expiredPenalties"
           @clearPenalties="clearPenalties" @addPenalty="addPenalty" />
       </div>
       <div class="col-6">
         <PlayerStatsForm :newPlayerStat="newPlayerStat" :playerStats="playerStats" @addPlayerStat="addPlayerStat"
           @removePlayerStat="removePlayerStat" @clearPlayerStat="clearPlayerStat" />
       </div>
-    </div>
-
-    <div class="position-fixed bottom-0 start-0 m-2">
-      <button class="btn btn-secondary btn-sm me-2" @click="exportData">
-        Export Data
-      </button>
-      <button class="btn btn-dark btn-sm" @click="newGame">
-        New Game
-      </button>
     </div>
   </div>
 </template>

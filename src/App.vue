@@ -1,15 +1,25 @@
 <template>
   <div>
     <router-view />
-    <div class="container mb-2">
-      <div class="position-fixed bottom-0 end-0 m-2">
-          <router-link to="/" class="btn btn-outline-secondary btn-sm me-2">Public</router-link>
-          <router-link v-if="user && isAllowed" to="/control" class="btn btn-outline-primary btn-sm me-2">Control</router-link>
-          <button class="btn btn-secondary btn-sm" v-if="!user" @click="loginWithGoogle">Login to Access Controls</button>
+    <nav class="navbar fixed-bottom bg-dark">
+      <div class="container-fluid">
+        <div class="float-start m-2">
+        <button class="btn btn-secondary btn-sm me-2" @click="exportData">
+          Export Data
+        </button>
+        <button class="btn btn-success btn-sm" @click="newGame">
+          New Game
+        </button>
+      </div>
+      <div class="float-end m-2">
+          <router-link to="/" class="btn btn-secondary btn-sm me-2">Public</router-link>
+          <router-link v-if="user && isAllowed" to="/control" class="btn btn-primary btn-sm me-2">Control</router-link>
+          <button class="btn btn-danger btn-sm" v-if="!user" @click="loginWithGoogle">Login to Access Controls</button>
           <p v-if="user && !isAllowed">You are not authorized to access this content.</p>
           <button v-if="user" class="btn btn-danger btn-sm" @click="logout">Logout</button>
       </div>
-    </div>
+      </div>
+    </nav>
   </div>
 </template>
 

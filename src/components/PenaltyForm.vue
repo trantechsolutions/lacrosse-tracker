@@ -26,7 +26,7 @@ import { reactive, watch } from "vue";
 import Swal from "sweetalert2";
 
 // Props and emits for handling penalty data
-const props = defineProps(['newPenalty', 'gameClock', 'expiredPenalties']);
+const props = defineProps(['newPenalty', 'gameClock', 'activePenalties', 'expiredPenalties']);
 const emit = defineEmits(['addPenalty', 'clearPenalties']);
 
 const local = reactive({
@@ -46,23 +46,27 @@ const openPenaltyForm = () => {
     title: 'Add Penalty',
     html: `
       <div class="row g-2">
-        <div class="col-12">
+        <div class="col-4">
+          <label>Player</label>
           <input id="player" class="form-control form-control-sm" type="text" placeholder="Player #" value="${local.player}" />
         </div>
-        <div class="col-12">
-          <label class="btn btn-outline-success btn-sm w-100" for="releasable">Releasable</label>
-          <input class="btn-check" type="checkbox" id="releasable" ${local.releasable ? 'checked' : ''} />
+        <div class="col-6 offset-2">
+          <label>Releasable</label>
+          <div class="btn-group btn-group-sm w-100">
+            <button class="btn btn-outline-success active" id="yesBtn">Yes</button>
+            <button class="btn btn-outline-success" id="noBtn">No</button>
+          </div>
         </div>
         <div class="col-6">
           <label>Team</label>
-          <div class="btn-group w-100">
+          <div class="btn-group btn-group-sm w-100">
             <button class="btn btn-outline-primary active" id="homeBtn">Home</button>
             <button class="btn btn-outline-primary" id="awayBtn">Away</button>
           </div>
         </div>
         <div class="col-6">
           <label>Duration</label>
-          <div class="btn-group w-100">
+          <div class="btn-group btn-group-sm w-100">
             <button class="btn btn-outline-danger active" id="30sBtn">30s</button>
             <button class="btn btn-outline-danger" id="1minBtn">1:00</button>
             <button class="btn btn-outline-danger" id="2minBtn">2:00</button>
@@ -70,7 +74,7 @@ const openPenaltyForm = () => {
         </div>
         <div class="col-12">
           <label>Penalty Category</label>
-          <div class="btn-group w-100">
+          <div class="btn-group btn-group-sm w-100">
             <button class="btn btn-outline-dark active" id="crosscheckBtn">Crosscheck</button>
             <button class="btn btn-outline-dark" id="slashBtn">Slash</button>
             <button class="btn btn-outline-dark" id="tripBtn">Trip</button>
@@ -85,10 +89,17 @@ const openPenaltyForm = () => {
     cancelButtonText: 'Cancel',
     preConfirm: () => {
       const player = document.getElementById("player").value;
-      const releasable = document.getElementById("releasable").checked;
+      const releasable = local.releasable
       const team = local.team;
       const duration = local.duration;
       const category = local.category;
+
+      // Check if the player already has an active penalty
+      const activePenalty = props.activePenalties.find((penalty) => penalty.player === player);
+      if (activePenalty) {
+        Swal.showValidationMessage("This player already has an active penalty.");
+        return false;
+      }
 
       if (!player) {
         Swal.showValidationMessage("Player # is required");
@@ -110,6 +121,16 @@ const openPenaltyForm = () => {
 
   // Add event listeners for buttons inside the SweetAlert2 popup
   setTimeout(() => {
+    // Handle team selection
+    document.getElementById("yesBtn").addEventListener("click", () => {
+      local.releasable = true;
+      updateActiveButtons("yesBtn", "noBtn");
+    });
+    document.getElementById("noBtn").addEventListener("click", () => {
+      local.releasable = false;
+      updateActiveButtons("noBtn", "yesBtn");
+    });
+
     // Handle team selection
     document.getElementById("homeBtn").addEventListener("click", () => {
       local.team = "home";

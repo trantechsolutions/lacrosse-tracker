@@ -42,15 +42,18 @@ const openAddPlayerStatForm = () => {
     html: `
       <div class="row g-2">
         <div class="col-4">
+          <label>Player</label>
           <input id="player" class="form-control form-control-sm" v-model="local.player" placeholder="Player #" />
         </div>
         <div class="col-6 offset-2">
+          <label>Team</label>
           <div class="btn-group btn-group-sm w-100">
             <button class="btn btn-outline-primary active" id="homeBtn">Home</button>
           <button class="btn btn-outline-primary" id="awayBtn">Away</button>
           </div>
         </div>
         <div class="col-12">
+          <label>Category</label>
           <div class="btn-group btn-group-sm w-100">
             <button class="btn btn-outline-success active" id="goalBtn">Goal</button>
             <button class="btn btn-outline-success" id="assistBtn">Assist</button>
