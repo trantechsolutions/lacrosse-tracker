@@ -1,7 +1,7 @@
 <template>
     <div class="container-fluid py-3">
       <HeaderSection :quarter="quarter" :gameClock="gameClock" :shotClock="shotClock" :isClockRunning="isClockRunning" :isPublicView=true />
-      <ScoreSection :score="score" :timeouts="timeouts" :home="home" :away="away" :activePenalties="[]" :isClockRunning="true" :isPublicView=true  />
+      <ScoreSection :score="score" :timeouts="timeouts" :home="home" :away="away" :activePenalties="activePenalties" :isClockRunning="true" :isPublicView=true  />
     </div>
   </template>
   
@@ -21,6 +21,7 @@
   const quarter = ref(1)
   const home = ref('Home')
   const away = ref('Away')
+  const activePenalties = ref([])
   
   onMounted(() => {
     const scoreboardRef = dbRef(db, '/scoreboard')
@@ -35,6 +36,7 @@
         quarter.value = data.quarter
         home.value = data.home
         away.value = data.away
+        activePenalties.value = JSON.parse(data.activePenalties || [])
       }
     })
   })

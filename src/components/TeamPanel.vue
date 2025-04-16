@@ -19,7 +19,7 @@
         class="list-group-item d-flex justify-content-between align-items-center">
         {{ p.player ? `#${p.player}` : 'Player' }} - {{ p.category }} ({{ p.remaining }}s)
         <span v-if="p.releasable" class="badge bg-success">Releasable</span>
-        <button class="btn btn-sm btn-danger removeBtn" @click="$emit('removePenalty', i)"><i
+        <button v-if="!isPublicView" class="btn btn-sm btn-danger removeBtn" @click="$emit('removePenalty', i)"><i
             class="bi bi-x"></i></button>
       </li>
     </ul>
