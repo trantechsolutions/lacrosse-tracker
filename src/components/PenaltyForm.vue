@@ -6,15 +6,15 @@
           Add Penalty
         </button>
       </div>
-      <div v-if="expiredPenalties.length > 0" class="col-12">
+      <div v-if="scoreboard.expiredPenalties.length > 0" class="col-12">
         <div class="penalty-form mb-4">
           <h5 class="text-center">Expired Penalties</h5>
           <ul class="list-group">
-            <li v-for="(p, i) in expiredPenalties" :key="i" class="list-group-item">
+            <li v-for="(p, i) in scoreboard.expiredPenalties" :key="i" class="list-group-item">
               {{ p.team }} {{ p.player ? `- #${p.player}` : '' }} | {{ p.category }} | {{ formatTime(p.startGameClock) }} → {{ formatTime(p.endGameClock) }}
             </li>
           </ul>
-          <button v-if="expiredPenalties.length > 0" class="btn btn-outline-dark mt-2 w-100" @click="$emit('clearPenalties')">Clear Penalties</button>
+          <button v-if="scoreboard.expiredPenalties.length > 0" class="btn btn-outline-dark mt-2 w-100" @click="$emit('clearPenalties')">Clear Penalties</button>
         </div>
       </div>
     </div>
@@ -23,18 +23,18 @@
 
 <script setup>
 import { reactive, watch } from "vue";
+import { useScoreboardStore } from "@/stores/scoreboard";
 import Swal from "sweetalert2";
 
-// Props and emits for handling penalty data
-const props = defineProps(['newPenalty', 'gameClock', 'activePenalties', 'expiredPenalties']);
-const emit = defineEmits(['addPenalty', 'clearPenalties']);
+const scoreboard = useScoreboardStore();
 
+// Props and emits for handling penalty data
 const local = reactive({
-  ...props.newPenalty,
+  ...scoreboard.newPenalty,
 });
 
 watch(
-  () => props.newPenalty,
+  () => scoreboard.newPenalty,
   (val) => {
     Object.assign(local, val);
   }
@@ -95,7 +95,7 @@ const openPenaltyForm = () => {
       const category = local.category;
 
       // Check if the player already has an active penalty
-      const activePenalty = props.activePenalties.find((penalty) => penalty.player === player);
+      const activePenalty = scoreboard.activePenalties.find((penalty) => penalty.player === player);
       if (activePenalty) {
         Swal.showValidationMessage("This player already has an active penalty.");
         return false;
@@ -111,10 +111,10 @@ const openPenaltyForm = () => {
   }).then((result) => {
     if (result.isConfirmed) {
       // Emit the new penalty to the parent component
-      emit('addPenalty', {
+      scoreboard.addPenalty({
         ...result.value,
-        startGameClock: props.gameClock,
-        endGameClock: props.gameClock - result.value.duration
+        startGameClock: scoreboard.gameClock,
+        endGameClock: scoreboard.gameClock - result.value.duration
       });
     }
   });

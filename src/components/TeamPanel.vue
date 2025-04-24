@@ -1,21 +1,21 @@
 <template>
   <div class="col-6 border-end">
-    <h4><span v-if="!isPublicView && !isClockRunning" @click="$emit('editName')" class="editable">{{ teamName }}</span>
-      <span v-else>{{ teamName }}</span>
+    <h4><span v-if="!isPublicView && !scoreboard.isClockRunning" @click="scoreboard.updateTeamName(teamLabel)" class="editable">{{ scoreboard[teamLabel] }}</span>
+      <span v-else>{{ scoreboard[teamLabel] }}</span>
     </h4>
-    <div class="score-display mb-2">{{ score }}</div>
+    <div class="score-display mb-2">{{ scoreboard.score[teamLabel] }}</div>
     <div v-if="!isPublicView" class="btn-group btn-group-sm mb-2">
-      <button class="btn btn-danger btn-lg" @click="$emit('adjustScore', -1)"><i class="bi bi-dash-circle"></i></button>
-      <button class="btn btn-success btn-lg" @click="$emit('adjustScore', 1)"><i class="bi bi-plus-circle"></i></button>
+      <button class="btn btn-danger btn-lg" @click="scoreboard.decrementScore(teamLabel)"><i class="bi bi-dash-circle"></i></button>
+      <button class="btn btn-success btn-lg" @click="scoreboard.incrementScore(teamLabel)"><i class="bi bi-plus-circle"></i></button>
     </div>
-    <div class="mb-2">Timeouts: {{ timeouts }}</div>
+    <div class="mb-2">Timeouts: {{ scoreboard.timeouts[teamLabel] }}</div>
     <div v-if="!isPublicView" class="btn-group btn-group-sm mb-3">
-      <button class="btn btn-outline-secondary" @click="$emit('adjustTimeout', -1)"><i class="bi bi-dash"></i></button>
-      <button class="btn btn-outline-secondary" @click="$emit('adjustTimeout', 1)"><i class="bi bi-plus"></i></button>
+      <button class="btn btn-outline-secondary" @click="scoreboard.decrementTimeouts(teamLabel)"><i class="bi bi-dash"></i></button>
+      <button class="btn btn-outline-secondary" @click="scoreboard.incrementTimeouts(teamLabel)"><i class="bi bi-plus"></i></button>
     </div>
     <h6>Penalties</h6>
     <ul class="list-group">
-      <li v-for="(p, i) in penalties" :key="i"
+      <li v-for="(p, i) in scoreboard.activePenalties.filter(penalty => penalty.team === teamLabel)" :key="i"
         class="list-group-item d-flex justify-content-between align-items-center">
         {{ p.player ? `#${p.player}` : 'Player' }} - {{ p.category }} ({{ p.remaining }}s)
         <span v-if="p.releasable" class="badge bg-success">Releasable</span>
@@ -26,8 +26,22 @@
   </div>
 </template>
 <script setup>
+import { onMounted, onUnmounted } from 'vue'
+import { useScoreboardStore } from '@/stores/scoreboard'
+
+const scoreboard = useScoreboardStore()
+
+onMounted(() => {
+  scoreboard.startListening()
+})
+
+onUnmounted(() => {
+  scoreboard.stopListening()
+})
+
 const props = defineProps(['teamLabel', 'score', 'timeouts', 'penalties', 'teamName', 'isClockRunning', 'isPublicView'])
 </script>
+
 <style scoped>
 .score-display {
   font-size: 5rem;
