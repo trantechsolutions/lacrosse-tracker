@@ -29,8 +29,8 @@
           Reset Game
         </button>
         <div class="clock-display">
-          <span v-if="!isPublicView && !scoreboard.isClockRunning" class="editable" @click="scoreboard.updateClock('game')">{{ formatTime(scoreboard.gameClock) }}</span>
-          <span v-else>{{ formatTime(scoreboard.gameClock) }}</span>
+          <span v-if="!isPublicView && !scoreboard.isClockRunning" class="editable" @click="scoreboard.updateClock('game')">{{ scoreboard.formatTime(scoreboard.gameClock) }}</span>
+          <span v-else>{{ scoreboard.formatTime(scoreboard.gameClock) }}</span>
         </div>
       </div>
       <div class="col-12 col-md-4">
@@ -65,39 +65,25 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
 import { useScoreboardStore } from '@/stores/scoreboard'
 
 const scoreboard = useScoreboardStore()
-
-onMounted(() => {
-  scoreboard.startListening()
-})
-
-onUnmounted(() => {
-  scoreboard.stopListening()
-})
 
 const props = defineProps([
   "isPublicView",
 ]);
 
-function formatTime(sec) {
-  const m = String(Math.floor(sec / 60)).padStart(2, "0");
-  const s = String(sec % 60).padStart(2, "0");
-  return `${m}:${s}`;
-}
 
 </script>
 
 <style scoped>
 .clock-display {
-  font-size: 8rem;
+  font-size: 4rem;
   font-weight: 700;
 }
 
 .side-clock-display {
-  font-size: 6rem;
+  font-size: 4rem;
   font-weight: bold;
 }
 

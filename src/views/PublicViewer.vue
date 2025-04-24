@@ -1,5 +1,5 @@
 <template>
-  <div class="container-fluid py-3">
+  <div class="container-fluid">
     <HeaderSection
       :quarter="scoreboard.quarter"
       :gameClock="scoreboard.gameClock"
@@ -20,7 +20,6 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
 import { useScoreboardStore } from '@/stores/scoreboard'
 
 import HeaderSection from '@/components/HeaderSection.vue'
@@ -28,11 +27,4 @@ import ScoreSection from '@/components/ScoreSection.vue'
 
 const scoreboard = useScoreboardStore()
 
-onMounted(() => {
-  scoreboard.startListening()
-})
-
-onUnmounted(() => {
-  scoreboard.stopListening()
-})
 </script>
