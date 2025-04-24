@@ -1,10 +1,97 @@
 // stores/scoreboard.js
 import { defineStore } from 'pinia';
-import { ref, onMounted, onUnmounted, reactive, watch} from 'vue';
+import { ref, onMounted, onUnmounted, reactive, watch } from 'vue';
 import { db } from '@/firebase';
 import { ref as dbRef, onValue, update, push, set, remove } from 'firebase/database';
 import Swal from 'sweetalert2';
 import { auth, GoogleAuthProvider, signInWithPopup, signOut } from "@/firebase";  // Import Firebase auth
+import { useRouter } from 'vue-router';
+
+export const useAuthStore = defineStore('auth', () => {
+  const authenticated = ref(null);
+  const router = useRouter();
+  const allowedEmails = ['jonny5v@gmail.com'];
+
+  const loginWithGoogle = async () => {
+    await Swal.fire({
+      title: 'Sign in with Google',
+      html: `
+        <button id="google-login-btn" class="swal2-confirm swal2-styled" style="background-color: #4285F4;">
+          <img src="https://developers.google.com/identity/images/g-logo.png" style="width:20px; margin-right:8px;">
+          Continue with Google
+        </button>
+      `,
+      showConfirmButton: false,
+      didOpen: () => {
+        const loginBtn = document.getElementById('google-login-btn');
+        loginBtn.addEventListener('click', async () => {
+          const provider = new GoogleAuthProvider();
+          try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            if (!allowedEmails.includes(user.email)) {
+              await signOut(auth);
+              await Swal.fire({
+                icon: 'error',
+                title: 'Access Denied',
+                text: 'You are not authorized to access this application.',
+              });
+              return;
+            }
+
+            authenticated.value = user;
+            await Swal.fire({
+              icon: 'success',
+              title: `Welcome, ${user.displayName}!`,
+              timer: 1500,
+              showConfirmButton: false,
+            });
+
+            router.push('/control');
+          } catch (error) {
+            console.error("Google sign-in error:", error);
+            Swal.fire({
+              icon: 'error',
+              title: 'Sign-in Failed',
+              text: error.message,
+            });
+          }
+        });
+      }
+    });
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      authenticated.value = null;
+      await Swal.fire({
+        icon: 'info',
+        title: 'Logged Out',
+        text: 'You have been logged out.',
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      router.push('/');
+    } catch (error) {
+      console.error("Logout error:", error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Logout Failed',
+        text: error.message,
+      });
+    }
+  };
+
+
+  return {
+    authenticated,
+    loginWithGoogle,
+    logout
+  };
+});
+
 
 export const useScoreboardStore = defineStore('scoreboard', () => {
   const score = ref({ home: 0, away: 0 });
@@ -34,41 +121,17 @@ export const useScoreboardStore = defineStore('scoreboard', () => {
   const isAllowed = ref(false);  // Flag to track if the user is allowed
   const allowedEmails = ref(["jonny5v@gmail.com"]); // List of allowed emails
   const isPublicView = ref(false);
+  const autenticated = ref(null);
 
-  
-const localPenalty = reactive({ ...newPenalty.value });
-const localPlayerStat = reactive({ ...newPlayerStat.value })
+  const localPenalty = reactive({ ...newPenalty.value });
+  const localPlayerStat = reactive({ ...newPlayerStat.value })
 
-watch()
+  watch()
 
-watch(
-  () => newPenalty.value, val => Object.assign(localPenalty, val),
-  () => newPlayerStat.value, val => Object.assign(localPlayerStat, val)
-);
-
-  function loginWithGoogle() {
-    const provider = new GoogleAuthProvider();
-
-    signInWithPopup(auth, provider)
-      .then((result) => {
-        const user = result.user;
-        console.log("User signed in: ", user);
-        // Handle user data as needed (e.g., navigate to another page)
-      })
-      .catch((error) => {
-        console.error("Error during Google sign-in: ", error);
-      });
-  }
-
-  function logout() {
-    signOut(auth).then(() => {
-      console.log("User signed out");
-      // Handle post-logout actions (e.g., redirect to login page)
-      this.$router.push('/');  // This redirects to the homepage (PublicViewer)
-    }).catch((error) => {
-      console.error("Error signing out:", error);
-    });
-  }
+  watch(
+    () => newPenalty.value, val => Object.assign(localPenalty, val),
+    () => newPlayerStat.value, val => Object.assign(localPlayerStat, val)
+  );
 
   function toggleClocks() {
     if (isClockRunning.value) {
@@ -382,7 +445,7 @@ watch(
     const playerStat = { ...stat, gameClock: gameClock.value, quarter: quarter.value }; // or bring gameClock/quarter from Firebase
     playerStats.value.push(playerStat);
     updateFirebase();
-  }  
+  }
 
   // Remove a single player stat without waiting for confirmation
   function removePlayerStat(index) {
@@ -568,12 +631,12 @@ watch(
       clockInterval.value = null;
     }
   }
-  
-// Function to open the SweetAlert2 modal with the penalty form
-function openPenaltyForm() {
-  Swal.fire({
-    title: 'Add Penalty',
-    html: `
+
+  // Function to open the SweetAlert2 modal with the penalty form
+  function openPenaltyForm() {
+    Swal.fire({
+      title: 'Add Penalty',
+      html: `
       <div class="row g-2">
         <div class="col-4">
           <label>Player</label>
@@ -613,100 +676,100 @@ function openPenaltyForm() {
         </div>
       </div>
     `,
-    showCancelButton: true,
-    confirmButtonText: 'Add Penalty',
-    cancelButtonText: 'Cancel',
-    preConfirm: () => {
-      const player = document.getElementById("player").value;
-      const releasable = localPenalty.releasable
-      const team = localPenalty.team;
-      const duration = localPenalty.duration;
-      const category = localPenalty.category;
+      showCancelButton: true,
+      confirmButtonText: 'Add Penalty',
+      cancelButtonText: 'Cancel',
+      preConfirm: () => {
+        const player = document.getElementById("player").value;
+        const releasable = localPenalty.releasable
+        const team = localPenalty.team;
+        const duration = localPenalty.duration;
+        const category = localPenalty.category;
 
-      // Check if the player already has an active penalty
-      const activePenalty = activePenalties.value.find((penalty) => penalty.player === player);
-      if (activePenalty) {
-        Swal.showValidationMessage("This player already has an active penalty.");
-        return false;
+        // Check if the player already has an active penalty
+        const activePenalty = activePenalties.value.find((penalty) => penalty.player === player);
+        if (activePenalty) {
+          Swal.showValidationMessage("This player already has an active penalty.");
+          return false;
+        }
+
+        if (!player) {
+          Swal.showValidationMessage("Player # is required");
+          return false;
+        }
+
+        return { player, releasable, team, duration, category };
       }
-
-      if (!player) {
-        Swal.showValidationMessage("Player # is required");
-        return false;
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Emit the new penalty to the parent component
+        addPenalty({
+          ...result.value,
+          startGameClock: gameClock.value,
+          endGameClock: gameClock.value - result.value.duration
+        });
       }
+    });
 
-      return { player, releasable, team, duration, category };
-    }
-  }).then((result) => {
-    if (result.isConfirmed) {
-      // Emit the new penalty to the parent component
-      addPenalty({
-        ...result.value,
-        startGameClock: gameClock.value,
-        endGameClock: gameClock.value - result.value.duration
+    // Add event listeners for buttons inside the SweetAlert2 popup
+    setTimeout(() => {
+      // Handle team selection
+      document.getElementById("yesBtn").addEventListener("click", () => {
+        localPenalty.releasable = true;
+        updateActiveButtons("yesBtn", "noBtn");
       });
-    }
-  });
+      document.getElementById("noBtn").addEventListener("click", () => {
+        localPenalty.releasable = false;
+        updateActiveButtons("noBtn", "yesBtn");
+      });
 
-  // Add event listeners for buttons inside the SweetAlert2 popup
-  setTimeout(() => {
-    // Handle team selection
-    document.getElementById("yesBtn").addEventListener("click", () => {
-      localPenalty.releasable = true;
-      updateActiveButtons("yesBtn", "noBtn");
-    });
-    document.getElementById("noBtn").addEventListener("click", () => {
-      localPenalty.releasable = false;
-      updateActiveButtons("noBtn", "yesBtn");
-    });
+      // Handle team selection
+      document.getElementById("homeBtn").addEventListener("click", () => {
+        localPenalty.team = "home";
+        updateActiveButtons("homeBtn", "awayBtn");
+      });
+      document.getElementById("awayBtn").addEventListener("click", () => {
+        localPenalty.team = "away";
+        updateActiveButtons("awayBtn", "homeBtn");
+      });
 
-    // Handle team selection
-    document.getElementById("homeBtn").addEventListener("click", () => {
-      localPenalty.team = "home";
-      updateActiveButtons("homeBtn", "awayBtn");
-    });
-    document.getElementById("awayBtn").addEventListener("click", () => {
-      localPenalty.team = "away";
-      updateActiveButtons("awayBtn", "homeBtn");
-    });
+      // Handle duration selection
+      document.getElementById("30sBtn").addEventListener("click", () => {
+        localPenalty.duration = 30;
+        updateActiveButtons("30sBtn", "1minBtn", "2minBtn");
+      });
+      document.getElementById("1minBtn").addEventListener("click", () => {
+        localPenalty.duration = 60;
+        updateActiveButtons("1minBtn", "30sBtn", "2minBtn");
+      });
+      document.getElementById("2minBtn").addEventListener("click", () => {
+        localPenalty.duration = 120;
+        updateActiveButtons("2minBtn", "30sBtn", "1minBtn");
+      });
 
-    // Handle duration selection
-    document.getElementById("30sBtn").addEventListener("click", () => {
-      localPenalty.duration = 30;
-      updateActiveButtons("30sBtn", "1minBtn", "2minBtn");
-    });
-    document.getElementById("1minBtn").addEventListener("click", () => {
-      localPenalty.duration = 60;
-      updateActiveButtons("1minBtn", "30sBtn", "2minBtn");
-    });
-    document.getElementById("2minBtn").addEventListener("click", () => {
-      localPenalty.duration = 120;
-      updateActiveButtons("2minBtn", "30sBtn", "1minBtn");
-    });
-
-    // Handle penalty category selection
-    document.getElementById("crosscheckBtn").addEventListener("click", () => {
-      localPenalty.category = "crosscheck";
-      updateActiveButtons("crosscheckBtn", "slashBtn", "tripBtn", "roughnessBtn", "otherBtn");
-    });
-    document.getElementById("slashBtn").addEventListener("click", () => {
-      localPenalty.category = "slash";
-      updateActiveButtons("slashBtn", "crosscheckBtn", "tripBtn", "roughnessBtn", "otherBtn");
-    });
-    document.getElementById("tripBtn").addEventListener("click", () => {
-      localPenalty.category = "trip";
-      updateActiveButtons("tripBtn", "crosscheckBtn", "slashBtn", "roughnessBtn", "otherBtn");
-    });
-    document.getElementById("roughnessBtn").addEventListener("click", () => {
-      localPenalty.category = "unnecessaryroughness";
-      updateActiveButtons("roughnessBtn", "crosscheckBtn", "slashBtn", "tripBtn", "otherBtn");
-    });
-    document.getElementById("otherBtn").addEventListener("click", () => {
-      localPenalty.category = "other";
-      updateActiveButtons("otherBtn", "crosscheckBtn", "slashBtn", "tripBtn", "roughnessBtn");
-    });
-  }, 100);
-};
+      // Handle penalty category selection
+      document.getElementById("crosscheckBtn").addEventListener("click", () => {
+        localPenalty.category = "crosscheck";
+        updateActiveButtons("crosscheckBtn", "slashBtn", "tripBtn", "roughnessBtn", "otherBtn");
+      });
+      document.getElementById("slashBtn").addEventListener("click", () => {
+        localPenalty.category = "slash";
+        updateActiveButtons("slashBtn", "crosscheckBtn", "tripBtn", "roughnessBtn", "otherBtn");
+      });
+      document.getElementById("tripBtn").addEventListener("click", () => {
+        localPenalty.category = "trip";
+        updateActiveButtons("tripBtn", "crosscheckBtn", "slashBtn", "roughnessBtn", "otherBtn");
+      });
+      document.getElementById("roughnessBtn").addEventListener("click", () => {
+        localPenalty.category = "unnecessaryroughness";
+        updateActiveButtons("roughnessBtn", "crosscheckBtn", "slashBtn", "tripBtn", "otherBtn");
+      });
+      document.getElementById("otherBtn").addEventListener("click", () => {
+        localPenalty.category = "other";
+        updateActiveButtons("otherBtn", "crosscheckBtn", "slashBtn", "tripBtn", "roughnessBtn");
+      });
+    }, 100);
+  };
 
 
 
@@ -770,7 +833,7 @@ function openPenaltyForm() {
         });
       }
     })
-  
+
     // Add event listeners for buttons inside the SweetAlert2 popup
     setTimeout(() => {
       // Handle team selection
@@ -782,7 +845,7 @@ function openPenaltyForm() {
         localPlayerStat.team = "away";
         updateActiveButtons("awayBtn", "homeBtn");
       });
-  
+
       // Handle type selection
       document.getElementById("goalBtn").addEventListener("click", () => {
         localPlayerStat.type = "goal";
@@ -821,9 +884,9 @@ function openPenaltyForm() {
         updateActiveButtons("faceOffWinBtn", "goalBtn", "assistBtn", "shotBtn", "shotOnBtn", "gbBtn", "causedTOBtn", "saveBtn", "faceOffBtn");
       });
     }, 100);
-  
+
   };
-  
+
   // Utility function to update the active button class
   const updateActiveButtons = (...buttonIds) => {
     buttonIds.forEach((id) => {
@@ -862,8 +925,6 @@ function openPenaltyForm() {
     newPenalty,
     newPlayerStat,
     // Actions
-    loginWithGoogle,
-    logout,
     toggleClocks,
     updateTeamName,
     updateClock,

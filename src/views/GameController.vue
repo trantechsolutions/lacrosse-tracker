@@ -14,10 +14,13 @@
     <nav class="navbar fixed-bottom bg-dark">
       <div class="container-fluid">
         <div class="float-start m-2">
-          <button class="btn btn-secondary btn-sm me-2" @click="exportData">
+          <button v-if="authStore.authenticated" class="btn btn-danger btn-sm me-2" @click="authStore.logout">
+            Logout
+          </button>
+          <button class="btn btn-secondary btn-sm me-2" @click="scoreboard.exportData">
             Export Data
           </button>
-          <button class="btn btn-success btn-sm" @click="newGame">
+          <button class="btn btn-success btn-sm" @click="scoreboard.newGame">
             New Game
           </button>
         </div>
@@ -36,37 +39,15 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useScoreboardStore } from "@/stores/scoreboard";
-import { auth, GoogleAuthProvider, signInWithPopup, signOut } from "@/firebase";  // Import Firebase auth
+import { useScoreboardStore, useAuthStore } from "@/stores/store";
 
 import HeaderSection from "@/components/HeaderSection.vue";
 import ScoreSection from "@/components/ScoreSection.vue";
 import PenaltyForm from "@/components/PenaltyForm.vue";
 import PlayerStatsForm from "@/components/PlayerStatsForm.vue";
 
-const user = ref(null);  // Will hold the authenticated user
-const isAllowed = ref(false);  // Flag to track if the user is allowed
-const allowedEmails = ref(["jonny5v@gmail.com"]); // List of allowed emails
-const isPublicView = ref(false);
-
 const scoreboard = useScoreboardStore();
+const authStore = useAuthStore();
 
-const { exportData, newGame, startListening, stopListening } = scoreboard
-
-const props = defineProps({ isPublicView: Boolean, user: String })
-
-// Listen for authentication state changes
-auth.onAuthStateChanged((user) => {
-  console.log(user)
-  user.value = user;
-  if (user.value) {
-    // Check if the user's email is in the allowed list
-    isAllowed.value = allowedEmails.value.includes(user.value.email);
-  } else {
-    isAllowed.value = false;
-  }
-});
-
-
+const props = defineProps({ isPublicView: Boolean })
 </script>

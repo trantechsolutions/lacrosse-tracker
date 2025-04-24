@@ -23,7 +23,7 @@
   </div>
 </template>
 <script setup>
-import { useScoreboardStore } from "@/stores/scoreboard";
+import { useScoreboardStore } from "@/stores/store";
 
 const scoreboard = useScoreboardStore();
 </script>
