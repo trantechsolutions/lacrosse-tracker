@@ -1,13 +1,7 @@
 <template>
   <div class="container-fluid">
-    <HeaderSection
-      :quarter="scoreboard.quarter"
-      :gameClock="scoreboard.gameClock"
-      :shotClock="scoreboard.shotClock"
-      :isClockRunning="scoreboard.isClockRunning"
-      :isPublicView="true"
-    />
-    <ScoreSection
+    <HeaderSection isPublicView="true" />
+    <!-- <ScoreSection
       :score="scoreboard.score"
       :timeouts="scoreboard.timeouts"
       :home="scoreboard.home"
@@ -15,7 +9,7 @@
       :activePenalties="scoreboard.activePenalties"
       :isClockRunning="scoreboard.isClockRunning"
       :isPublicView="true"
-    />
+    /> -->
   </div>
 </template>
 
@@ -23,8 +17,5 @@
 import { useScoreboardStore } from '@/stores/store'
 
 import HeaderSection from '@/components/HeaderSection.vue'
-import ScoreSection from '@/components/ScoreSection.vue'
-
-const scoreboard = useScoreboardStore()
 
 </script>

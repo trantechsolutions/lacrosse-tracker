@@ -2,15 +2,27 @@
 import { defineStore } from 'pinia';
 import { ref, onMounted, onUnmounted, reactive, watch } from 'vue';
 import { db } from '@/firebase';
-import { ref as dbRef, onValue, update, push, set, remove } from 'firebase/database';
+import { ref as dbRef, onValue, update, push, set } from 'firebase/database';
 import Swal from 'sweetalert2';
 import { auth, GoogleAuthProvider, signInWithPopup, signOut } from "@/firebase";  // Import Firebase auth
+import { onAuthStateChanged } from 'firebase/auth'
 import { useRouter } from 'vue-router';
 
 export const useAuthStore = defineStore('auth', () => {
   const authenticated = ref(null);
   const router = useRouter();
   const allowedEmails = ['jonny5v@gmail.com'];
+
+  // This runs once on app load
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      authenticated.value = user;
+      console.log('Session restored:', user.email);
+    } else {
+      authenticated.value = null;
+      console.log('No active session');
+    }
+  });
 
   const loginWithGoogle = async () => {
     await Swal.fire({
@@ -406,7 +418,19 @@ export const useScoreboardStore = defineStore('scoreboard', () => {
     const remaining = [];
     for (const p of activePenalties.value) {
       p.remaining--;
-      if (p.remaining <= 0) expiredPenalties.value.push({ ...p });
+      if (p.remaining <= 0) {
+        expiredPenalties.value.push({ ...p });
+        // fire alert that player is released
+        Swal.fire({
+          toast: true,
+          position: "bottom",
+          title: "Cleared",
+          text: `#${p.player} Released`,
+          icon: "success",
+          timer: 1200,
+          showConfirmButton: false,
+        });
+      }
       else remaining.push(p);
     }
     activePenalties.value = remaining;
