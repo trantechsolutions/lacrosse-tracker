@@ -1,7 +1,7 @@
 <template>
   <div>
     <router-view />
-    <button v-if="showInstallButton" @click="installApp" class="install-btn">
+    <button @click="installApp" class="install-btn">
       📲 Download App
     </button>
     <Footer />
