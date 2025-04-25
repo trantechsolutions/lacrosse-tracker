@@ -40,7 +40,7 @@
               </div>
             </div>
             <div class="col-4">
-              <div class="btn-group btn-group-sm col-4">
+              <div class="btn-group btn-group-sm">
                 <button class="btn" :class="scoreboard.isClockRunning ? 'btn-danger' : 'btn-success'"
                   @click="scoreboard.toggleClocks">
                   <i :class="scoreboard.isClockRunning ? 'bi bi-pause-fill' : 'bi bi-play-fill'
@@ -50,13 +50,13 @@
               </div>
             </div>
             <div class="col-4">
-              <div class="btn-group btn-group-sm col-3">
+              <div class="btn-group btn-group-sm">
                 <button v-if="!isPublicView" class="btn btn-outline-danger" @click="scoreboard.resetGameClock">
                   <i class="bi bi-arrow-counterclockwise"></i> Game
                 </button>
-                <!-- <button v-if="!isPublicView" class="btn btn-warning" @click="scoreboard.resetShotClock">
-                <i class="bi bi-arrow-counterclockwise"></i> Shot
-              </button> -->
+                <button v-if="!isPublicView" class="btn btn-outline-danger" @click="scoreboard.resetShotClock">
+                  <i class="bi bi-arrow-counterclockwise"></i> Shot
+                </button>
               </div>
             </div>
           </div>
