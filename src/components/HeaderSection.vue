@@ -5,7 +5,7 @@
         <TeamPanel teamLabel="home" :isPublicView="isPublicView" />
       </div>
       <div class="col-12 col-md-4">
-        <div @click="authStore.loginWithGoogle">Game Clock</div>
+        <div>Game Clock</div>
 
         <div class="clock-display">
           <span v-if="!isPublicView && !scoreboard.isClockRunning" class="editable"
