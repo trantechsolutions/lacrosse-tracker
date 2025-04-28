@@ -276,7 +276,7 @@ export const useScoreboardStore = defineStore('scoreboard', () => {
       const parsedValue = parseInt(input);
 
       if (!isNaN(parsedValue)) {
-        if (type === "gameClock") gameClock.value = parsedValue;
+        if (type === "game") gameClock.value = parsedValue;
         else shotClock.value = parsedValue;
 
         updateFirebase()
